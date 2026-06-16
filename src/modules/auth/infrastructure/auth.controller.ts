@@ -26,13 +26,24 @@ export class AuthController {
           message: 'El correo y la contraseña son requeridos.' 
         });
       }
-
-      // 2. Ejecutamos el caso de uso con los datos recibidos
+      // Ejecutar la validación criptográfica en el caso de uso
       const user = await this.loginUseCase.execute(email, password);
 
-      // 3. Si todo sale bien, respondemos con éxito (HTTP 200) y los datos del usuario
+      // 2. GENERACIÓN DEL TOKEN DE SESIÓN (JWT)
+      // Guardamos dentro del token los datos mínimos para identificar al usuario en futuros clics
+      const payload = {
+        id: user.id,
+        rol: user.rol,
+        tenantId: user.tenantId
+      };
+
+      // Firmamos el token usando la herramienta nativa de @fastify/jwt
+      // Configuramos que expire en 2 horas para obligar a re-autenticar si hay inactividad
+      const token = await (reply as any).jwtSign(payload, { expiresIn: '2h' });
+
       return reply.status(200).send({
         message: 'Login exitoso',
+        token,
         user: {
           id: user.id,
           nombre: user.nombre,

@@ -1,49 +1,32 @@
 // src/test-connection.ts
-import { LoginUseCase } from './modules/auth/application/login.use-case.js';
-import { PgUserRepository } from './modules/auth/infrastructure/pg-user.repository.js';
 import { pool } from './shared/infrastructure/database.js';
+import bcrypt from 'bcrypt';
 
-async function testLoginUseCase() {
-  console.log('🚀 [Test Caso de Uso]: Inicializando entorno de autenticación...');
-
-  // 1. Instanciamos el adaptador de infraestructura (Postgres)
-  const userRepository = new PgUserRepository();
-
-  // 2. Instanciamos el Caso de Uso pasándole el repositorio (Inyección de Dependencias)
-  const loginUseCase = new LoginUseCase(userRepository);
-
+async function repararPassword() {
+  console.log('⏳ [Reparador]: Generando hash de alta precisión para "Admin123!"...');
+  
   try {
-    // === ESCENARIO A: INTENTO DE LOGIN EXITOSO ===
-    console.log('\n🔐 [Escenario A]: Intentando ingresar con credenciales válidas...');
+    // 1. Generamos el hash real usando un factor de coste de 12 desde tu propia computadora
+    const passwordPlana = 'Admin123!';
+    const salt = await bcrypt.genSalt(12);
+    const hashGenerado = await bcrypt.hash(passwordPlana, salt);
     
-    // NOTA: Para este test, la contraseña debe ser exactamente igual a la que esté 
-    // en tu tabla 'usuario' (en el paso anterior inyectamos el string plano o el hash)
-    const emailValido = 'alvaro.alfonso@cyberbot.com';
-    const passwordValida = '$2b$12$K89YTr82mX.eOux1wFvG94KmR1iP3qYwZa7oB2eRtK81qLwR7bXUJ'; 
+    console.log(`🔑 [Hash Generado]: ${hashGenerado}`);
 
-    const loggedUser = await loginUseCase.execute(emailValido, passwordValida);
+    // 2. Actualizamos la base de datos directamente usando el Pool
+    const emailAActualizar = 'alvaro.alfonso@cyberbot.com';
+    const query = 'UPDATE usuario SET password_hash = $1 WHERE email = $2;';
     
-    console.log('✅ [Login Exitoso]: El Caso de Uso validó al usuario correctamente.');
-    console.log(`   - Bienvenido: ${loggedUser.nombre}`);
-    console.log(`   - Rol asignado: ${loggedUser.rol}`);
-    console.log(`   - Pertenece al Tenant ID: ${loggedUser.tenantId}`);
-
-
-    // === ESCENARIO B: INTENTO DE LOGIN CON CONTRASEÑA INCORRECTA (HACKER) ===
-    console.log('\n🛡️ [Escenario B]: Intentando ingresar con contraseña incorrecta (Simulación de ataque)...');
+    await pool.query(query, [hashGenerado, emailAActualizar]);
     
-    await loginUseCase.execute(emailValido, 'contrasena_falsa_123');
-    
-    console.log('❌ [Falla del Test]: El sistema permitió el ingreso con clave incorrecta. Revisa la lógica.');
+    console.log(`✅ [Reparador]: Base de datos actualizada con éxito para: ${emailAActualizar}`);
 
-  } catch (error: any) {
-    // Capturamos el error generado por el sistema de seguridad
-    console.log(`✅ [Bloqueo de Seguridad Exitoso]: El sistema denegó el acceso. Mensaje: "${error.message}"`);
+  } catch (error) {
+    console.error('❌ [Error Reparador]:', error);
   } finally {
-    // Cerramos el pool de conexiones al terminar la prueba
     await pool.end();
-    console.log('\n🏁 [Test]: Batería de pruebas de lógica de negocio finalizada.');
+    console.log('🏁 [Reparador]: Proceso terminado.');
   }
 }
 
-testLoginUseCase();
+repararPassword();
