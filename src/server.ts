@@ -23,6 +23,20 @@ import { UpdateCustomerUseCase } from './modules/customer/application/update-cus
 import { DeleteCustomerUseCase } from './modules/customer/application/delete-customer.use-case.js';
 import { CustomerController } from './modules/customer/infrastructure/customer.controller.js';
 
+// INYECCIÓN DE DEPENDENCIAS - MÓDULO DE INTERACCIONES (ACTIVIDAD)
+import { PgActivityRepository } from './modules/activity/infrastructure/pg-activity.repository.js';
+import { CreateActivityUseCase } from './modules/activity/application/create-activity.use-case.js';
+import { GetActivitiesByNegocioUseCase } from './modules/activity/application/get-activities-by-negocio.use-case.js';
+import { ActivityController } from './modules/activity/infrastructure/activity.controller.js';
+
+
+//INYECCIÓN DE DEPENDENCIAS - MÓDULO DE NEGOCIOS (PIPELINE KANBAN)
+import { PgDealRepository } from './modules/deal/infrastructure/pg-deal.repository.js';
+import { CreateDealUseCase } from './modules/deal/application/create-deal.use-case.js';
+import { GetDealsByTenantUseCase } from './modules/deal/application/get-deals-by-tenant.use-case.js';
+import { UpdateDealStageUseCase } from './modules/deal/application/update-deal-stage.use-case.js';
+import { DealController } from './modules/deal/infrastructure/deal.controller.js';
+
 dotenv.config();
 
 const server = fastify({ logger: true });
@@ -48,6 +62,13 @@ const tenantController = new TenantController(getTenantByIdUseCase);
 // 1. Instanciamos el adaptador de infraestructura
 const customerRepository = new PgCustomerRepository();
 
+//Módulo de negocios(pipeline kanban)
+const dealRepository = new PgDealRepository();
+const createDealUseCase = new CreateDealUseCase(dealRepository);
+const getDealsByTenantUseCase = new GetDealsByTenantUseCase(dealRepository);
+const updateDealStageUseCase = new UpdateDealStageUseCase(dealRepository);
+const dealController = new DealController(createDealUseCase, getDealsByTenantUseCase, updateDealStageUseCase);
+
 // 2. Instanciamos la capa de aplicación con el repositorio correspondiente
 const createCustomerUseCase = new CreateCustomerUseCase(customerRepository);
 const getCustomersByTenantUseCase = new GetCustomersByTenantUseCase(customerRepository);
@@ -65,6 +86,16 @@ const customerController = new CustomerController(
 );
 
 
+//Modulo de interacciones (Actividad)
+const activityRepository = new PgActivityRepository();
+const createActivityUseCase = new CreateActivityUseCase(activityRepository);
+const getActivitiesByNegocioUseCase = new GetActivitiesByNegocioUseCase(activityRepository);
+
+// 3. Ensamblamos el controlador con sus casos de uso correspondientes
+const activityController = new ActivityController(createActivityUseCase, getActivitiesByNegocioUseCase);
+
+
+
 // 2. DEFINIR LAS RUTAS DEL SISTEMA
 server.post('/api/auth/login', (request, reply) => authController.login(request, reply));
 
@@ -78,6 +109,20 @@ server.get('/api/customers', (req, rep) => customerController.listarTodos(req, r
 server.get('/api/customers/:id', (req, rep) => customerController.obtenerPorId(req, rep));
 server.put('/api/customers/:id', (req, rep) => customerController.actualizar(req, rep));
 server.delete('/api/customers/:id', (req, rep) => customerController.eliminar(req, rep));
+
+
+//REGISTRO DE ENDPOINTS PARA LA BITÁCORA CRM
+// 1. Registrar una nueva interacción (Llamada, Correo, WhatsApp, Reunión)
+server.post('/api/activities', (req, rep) => activityController.crear(req, rep));
+
+// 2. Recuperar la línea de tiempo cronológica filtrada por negocio y blindada por tenant
+server.get('/api/activities/timeline/:negocioId', (req, rep) => activityController.obtenerTimeline(req, rep));
+
+//// REGISTRO DE ENDPOINTS PARA EL PIPELINE DE VENTAS (KANBAN)
+
+server.post('/api/deals', (req, rep) => dealController.crear(req, rep));
+server.get('/api/deals', (req, rep) => dealController.listarTodos(req, rep));
+server.patch('/api/deals/:id/stage', (req, rep) => dealController.actualizarEtapa(req, rep));
 
 // 3. ENCENDER EL SERVIDOR
 const start = async () => {
