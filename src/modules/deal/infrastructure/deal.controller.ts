@@ -5,8 +5,8 @@ import { GetDealsByTenantUseCase } from '../application/get-deals-by-tenant.use-
 import { UpdateDealStageUseCase } from '../application/update-deal-stage.use-case.js';
 
 /**
- * Adaptador de Entrada: Controlador HTTP para el Pipeline de Negocios (Deals).
- * Administra el tablero Kanban bajo el escudo de seguridad Fastify JWT.
+ * Adaptador de Entrada: Controlador HTTP Fastify para el Pipeline de Ventas (Deals).
+ * Libre de Express, acoplado al alto rendimiento nativo.
  */
 export class DealController {
   constructor(
@@ -15,27 +15,24 @@ export class DealController {
     private updateDealStageUseCase: UpdateDealStageUseCase
   ) {}
 
-  // =======================================================================
-  // 1. CREAR NEGOCIO (POST /api/deals)
-  // =======================================================================
-  async crear(request: FastifyRequest, reply: FastifyReply) {
+  create = async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      await request.jwtVerify(); // Validación del token corporativo
+      await request.jwtVerify(); // Extrae el token corporativo de forma segura
       
       const user = request.user as { tenantId: string };
       const body = request.body as { 
         clienteId: string; 
         titulo: string; 
-        valor: number | null; 
-        etapa?: string; 
-        fechaCierreEstimada: string | null 
+        valor: number; 
+        etapa: string; 
+        fechaCierreEstimada: string; 
       };
 
       const nuevoNegocio = await this.createDealUseCase.execute({
         tenantId: user.tenantId,
         clienteId: body.clienteId,
         titulo: body.titulo,
-        valor: body.valor,
+        valor: body.valor ? Number(body.valor) : 0,
         etapa: body.etapa,
         fechaCierreEstimada: body.fechaCierreEstimada
       });
@@ -44,42 +41,31 @@ export class DealController {
     } catch (error: any) {
       return reply.status(400).send({ error: 'Bad Request', message: error.message });
     }
-  }
+  };
 
-  // =======================================================================
-  // 2. RECUPERAR KANBAN (GET /api/deals)
-  // =======================================================================
-  async listarTodos(request: FastifyRequest, reply: FastifyReply) {
+  listarTodos = async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       await request.jwtVerify();
-      
       const user = request.user as { tenantId: string };
-      const negocios = await this.getDealsByTenantUseCase.execute(user.tenantId);
       
+      const negocios = await this.getDealsByTenantUseCase.execute(user.tenantId);
       return reply.status(200).send(negocios);
     } catch (error: any) {
       return reply.status(400).send({ error: 'Bad Request', message: error.message });
     }
-  }
+  };
 
-  // =======================================================================
-  // 3. ACTUALIZAR ETAPA KANBAN (PATCH/PUT /api/deals/:id/stage)
-  // =======================================================================
-  async actualizarEtapa(request: FastifyRequest, reply: FastifyReply) {
+  actualizarEtapa = async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       await request.jwtVerify();
-      
       const user = request.user as { tenantId: string };
       const { id } = request.params as { id: string };
       const { etapa } = request.body as { etapa: string };
 
       await this.updateDealStageUseCase.execute(id, user.tenantId, etapa);
-      
-      return reply.status(200).send({ 
-        message: 'Etapa del negocio actualizada con éxito en el pipeline.' 
-      });
+      return reply.status(200).send({ message: 'Etapa del negocio actualizada con éxito en el pipeline.' });
     } catch (error: any) {
       return reply.status(400).send({ error: 'Bad Request', message: error.message });
     }
-  }
+  };
 }

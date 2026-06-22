@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 // Módulo de Autenticación (Bloque 1)
 import { PgUserRepository } from './modules/auth/infrastructure/pg-user.repository.js';
 import { LoginUseCase } from './modules/auth/application/login.use-case.js';
+import { CreateMemberUseCase } from './modules/auth/application/create-member.use-case.js'; // <- NUEVA LÍNEA
 import { AuthController } from './modules/auth/infrastructure/auth.controller.js';
 
 // NUEVAS IMPORTACIONES: Módulo de Tenants (Bloque 2)
@@ -37,6 +38,15 @@ import { GetDealsByTenantUseCase } from './modules/deal/application/get-deals-by
 import { UpdateDealStageUseCase } from './modules/deal/application/update-deal-stage.use-case.js';
 import { DealController } from './modules/deal/infrastructure/deal.controller.js';
 
+
+//INYECCIÓN DE DEPENDENCIAS - MÓDULO DE TAREAS Y RECORDATORIOS
+import { PgTaskRepository } from './modules/task/infrastructure/pg-task.repository.js';
+import { CreateTaskUseCase } from './modules/task/application/create-task.use-case.js';
+import { GetTasksByTenantUseCase } from './modules/task/application/get-tasks-by-tenant.use-case.js';
+import { UpdateTaskStatusUseCase } from './modules/task/application/update-task-status.use-case.js';
+import { TaskController } from './modules/task/infrastructure/task.controller.js';
+
+
 dotenv.config();
 
 const server = fastify({ logger: true });
@@ -49,9 +59,13 @@ await server.register(jwt, {
 
 
 // Módulo de Autenticación
+// Módulo de Autenticación
 const userRepository = new PgUserRepository();
 const loginUseCase = new LoginUseCase(userRepository);
-const authController = new AuthController(loginUseCase);
+const createMemberUseCase = new CreateMemberUseCase(userRepository); 
+// Ensamblamos el controlador pasándole ambos casos de uso en orden
+const authController = new AuthController(loginUseCase, createMemberUseCase); // <- MODIFICADO
+
 
 // Módulo de Tenants 
 const tenantRepository = new PgTenantRepository();
@@ -68,6 +82,8 @@ const createDealUseCase = new CreateDealUseCase(dealRepository);
 const getDealsByTenantUseCase = new GetDealsByTenantUseCase(dealRepository);
 const updateDealStageUseCase = new UpdateDealStageUseCase(dealRepository);
 const dealController = new DealController(createDealUseCase, getDealsByTenantUseCase, updateDealStageUseCase);
+
+
 
 // 2. Instanciamos la capa de aplicación con el repositorio correspondiente
 const createCustomerUseCase = new CreateCustomerUseCase(customerRepository);
@@ -94,10 +110,23 @@ const getActivitiesByNegocioUseCase = new GetActivitiesByNegocioUseCase(activity
 // 3. Ensamblamos el controlador con sus casos de uso correspondientes
 const activityController = new ActivityController(createActivityUseCase, getActivitiesByNegocioUseCase);
 
+//Módulo de tareas y recordatorios
+const taskRepository = new PgTaskRepository();
+
+// 2. Instanciamos la capa de aplicación con sus tres casos de uso de agenda
+const createTaskUseCase = new CreateTaskUseCase(taskRepository);
+const getTasksByTenantUseCase = new GetTasksByTenantUseCase(taskRepository);
+const updateTaskStatusUseCase = new UpdateTaskStatusUseCase(taskRepository);
+
+// 3. Ensamblamos el controlador pasándole sus dependencias puras
+const taskController = new TaskController(createTaskUseCase, getTasksByTenantUseCase, updateTaskStatusUseCase);
+
 
 
 // 2. DEFINIR LAS RUTAS DEL SISTEMA
 server.post('/api/auth/login', (request, reply) => authController.login(request, reply));
+// Nueva Ruta Protegida para registrar asesores/miembros del equipo
+server.post('/api/auth/members', (req, rep) => authController.registerMember(req, rep));
 
 // Rutas Privadas / Protegidas con Escudo JWT
 server.get('/api/tenant/mi-empresa', (request, reply) => tenantController.obtenerMiEmpresa(request, reply));
@@ -120,9 +149,14 @@ server.get('/api/activities/timeline/:negocioId', (req, rep) => activityControll
 
 //// REGISTRO DE ENDPOINTS PARA EL PIPELINE DE VENTAS (KANBAN)
 
-server.post('/api/deals', (req, rep) => dealController.crear(req, rep));
+server.post('/api/deals', (req, rep) => dealController.create(req, rep));
 server.get('/api/deals', (req, rep) => dealController.listarTodos(req, rep));
 server.patch('/api/deals/:id/stage', (req, rep) => dealController.actualizarEtapa(req, rep));
+
+// REGISTRO DE ENDPOINTS PARA LA GESTIÓN DE TAREAS (AGENDA COMERCIAL)
+server.post('/api/tasks', (req, rep) => taskController.crear(req, rep));
+server.get('/api/tasks', (req, rep) => taskController.listarTodas(req, rep));
+server.patch('/api/tasks/:id/status', (req, rep) => taskController.cambiarEstado(req, rep));
 
 // 3. ENCENDER EL SERVIDOR
 const start = async () => {

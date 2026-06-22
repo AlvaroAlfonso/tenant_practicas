@@ -1,44 +1,41 @@
-// src/modules/auth/infrastructure/auth.controller.ts
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { LoginUseCase } from '../application/login.use-case.js';
+import { CreateMemberUseCase } from '../application/create-member.use-case.js';
 
 /**
  * Adaptador de Entrada (Controlador HTTP).
- * Se encarga de recibir los datos de la red, delegar la lógica al caso de uso
- * y emitir las respuestas con los códigos de estado HTTP correctos.
+ * Administra los flujos de inicio de sesión y gestión del equipo del Workspace.
  */
 export class AuthController {
-  // El controlador recibe el caso de uso listo mediante el constructor
-  constructor(private loginUseCase: LoginUseCase) {}
+  // Inyectamos ambos casos de uso a través del constructor
+  constructor(
+    private loginUseCase: LoginUseCase,
+    private createMemberUseCase: CreateMemberUseCase
+  ) {}
 
   /**
-   * Manejador de la petición de Login (POST)
+   * Manejador de la petición de Login (POST /api/auth/login)
    */
   async login(request: FastifyRequest, reply: FastifyReply) {
     try {
-      // 1. Extraemos los datos del cuerpo (body) de la petición HTTP
       const { email, password } = request.body as any;
 
-      // Validación defensiva básica: Evita procesar datos vacíos
       if (!email || !password) {
         return reply.status(400).send({ 
           error: 'Bad Request', 
           message: 'El correo y la contraseña son requeridos.' 
         });
       }
-      // Ejecutar la validación criptográfica en el caso de uso
+
       const user = await this.loginUseCase.execute(email, password);
 
-      // 2. GENERACIÓN DEL TOKEN DE SESIÓN (JWT)
-      // Guardamos dentro del token los datos mínimos para identificar al usuario en futuros clics
+      // Guardamos en el payload los datos clave de identidad corporativa
       const payload = {
         id: user.id,
         rol: user.rol,
         tenantId: user.tenantId
       };
 
-      // Firmamos el token usando la herramienta nativa de @fastify/jwt
-      // Configuramos que expire en 2 horas para obligar a re-autenticar si hay inactividad
       const token = await (reply as any).jwtSign(payload, { expiresIn: '2h' });
 
       return reply.status(200).send({
@@ -54,10 +51,66 @@ export class AuthController {
       });
 
     } catch (error: any) {
-      // 4. Si el caso de uso arroja un error de credenciales, respondemos HTTP 401 (No autorizado)
       return reply.status(401).send({
         error: 'Unauthorized',
-        message: error.message // "Credenciales inválidas o cuenta deshabilitada"
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Manejador para Registrar Miembros del Equipo (POST /api/auth/members)
+   * ¡CON VERIFICACIÓN INLINE ADAPTADA A FASTIFY!
+   */
+  async registerMember(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      // 1. EJECUTAR VERIFICACIÓN CRIPTOGRÁFICA DEL TOKEN
+      // Esto lee la cabecera 'Authorization: Bearer <TOKEN>' y llena el objeto request.user
+      await request.jwtVerify();
+
+      // 2. EXTRAER IDENTITY CONTEXT DEL TOKEN JWT
+      const { tenantId, rol: userRol } = (request as any).user;
+
+      // 3. REGLA DE ACCESO: Solo administradores pueden agregar personal al CRM
+      if (userRol !== 'administrador') {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Acceso denegado. Solo los administradores pueden registrar miembros en el workspace.'
+        });
+      }
+
+      // 4. Extraer payload del cuerpo de la petición
+      const { username, nombre, email, password, rol } = request.body as any;
+
+      // 5. Ejecutar el caso de uso acoplando de forma segura el tenant_id de la sesión
+      const nuevoUsuario = await this.createMemberUseCase.execute({
+        username,
+        nombre,
+        email,
+        passwordPlana: password,
+        tenantId, // El asesor heredará la empresa del admin de forma transparente
+        rol: rol || 'empleado'
+      });
+
+      // 6. Retornar éxito corporativo
+      return reply.status(201).send({
+        message: 'Miembro del equipo registrado con éxito en el workspace.',
+        user: nuevoUsuario
+      });
+
+    } catch (error: any) {
+      // Si el token es inválido o expiró, Fastify arrojará un error que atrapamos aquí
+      if (error.statusCode === 401 || error.message.includes('Authorization')) {
+        return reply.status(401).send({
+          error: 'Unauthorized',
+          message: 'Token de sesión ausente, inválido o expirado.'
+        });
+      }
+
+      // Capturamos las validaciones de negocio del caso de uso (ej. correo duplicado)
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: error.message
       });
     }
   }
