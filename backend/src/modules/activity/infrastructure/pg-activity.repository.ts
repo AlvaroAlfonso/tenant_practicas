@@ -5,36 +5,52 @@ import { Activity } from '../domain/activity.entity.js';
 
 /**
  * Adaptador de Salida: Repositorio PostgreSQL para Actividades.
- * Conecta el dominio con la tabla física 'actividad' bajo aislamiento relacional.
+ * Conecta el dominio con la tabla física 'actividad' asegurando el aislamiento corporativo.
  */
 export class PgActivityRepository implements ActivityRepository {
   
   // =======================================================================
-  // PERSISTIR UNA NUEVA ACTIVIDAD (INSERT)
+  // PERSISTIR UNA NUEVA ACTIVIDAD (INSERT MULTI-TENANT)
   // =======================================================================
   async create(activity: Activity): Promise<Activity> {
+    // Usamos una inserción basada en un SELECT para heredar automáticamente el tenant_id real del negocio
     const query = `
-      INSERT INTO actividad (id, tipo, descripcion, fecha_programada, negocio_id)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, tipo, descripcion, fecha_programada AS "fechaProgramada", negocio_id AS "negocioId";
+      INSERT INTO actividad (id, tenant_id, negocio_id, tipo, descripcion, fecha_programada, estado)
+      SELECT 
+        $1::uuid, 
+        n.tenant_id, 
+        $2::uuid, 
+        $3, 
+        $4, 
+        $5::timestamp, 
+        $6
+      FROM negocio n
+      WHERE n.id = $2::uuid
+      RETURNING id, tenant_id AS "tenantId", negocio_id AS "negocioId", tipo, descripcion, fecha_programada AS "fechaProgramada", estado;
     `;
+    
     const values = [
       activity.id,
+      activity.negocioId,
       activity.tipo,
       activity.descripcion,
-      activity.fechaProgramada,
-      activity.negocioId
+      activity.fechaProgramada || new Date(), // Evita nulos en la fecha si viene vacía
+      'realizada'                             // Estado de interacción para la bitácora
     ];
 
     const result = await pool.query(query, values);
-    const row = result.rows[0];
+    
+    // Si por alguna razón el negocio_id no existe en la BD, el SELECT no insertará nada
+    if (result.rowCount === 0) {
+      throw new Error(`No se pudo registrar la actividad. Compruebe que el negocio_id ${activity.negocioId} existe.`);
+    }
 
-    // Mapeamos el registro de la BD de vuelta a nuestra Entidad de Dominio limpia
+    const row = result.rows[0];
     return new Activity(row.id, row.tipo, row.descripcion, row.fechaProgramada, row.negocioId);
   }
 
   // =======================================================================
-  // RECUPERAR LÍNEA DE TIEMPO DEL NEGOCIO (SELECT WITH INNER JOIN MULTI-TENANT)
+  // RECUPERAR LÍNEA DE TIEMPO DEL NEGOCIO (SELECT BLINDADO POR TENANT)
   // =======================================================================
   async findByNegocioId(negocioId: string, tenantId: string): Promise<Activity[]> {
     const query = `
@@ -48,7 +64,6 @@ export class PgActivityRepository implements ActivityRepository {
 
     const result = await pool.query(query, values);
 
-    // Transformamos cada fila de la tabla en una instancia de la entidad Activity
     return result.rows.map(row => new Activity(
       row.id,
       row.tipo,

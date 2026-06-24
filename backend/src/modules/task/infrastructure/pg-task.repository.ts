@@ -44,7 +44,7 @@ export class PgTaskRepository implements TaskRepository {
     const query = `
       SELECT id, tenant_id AS "tenantId", negocio_id AS "negocioId", tipo AS "titulo", descripcion, fecha_programada AS "fechaVencimiento", estado
       FROM actividad
-      WHERE tenant_id = $1
+      WHERE tenant_id = $1 AND estado NOT IN ('realizada')
       ORDER BY fecha_programada ASC;
     `;
     
@@ -56,7 +56,7 @@ export class PgTaskRepository implements TaskRepository {
       row.negocioId,
       row.titulo,
       row.descripcion,
-      new Date(row.fechaVencimiento),
+      row.fechaVencimiento ? new Date(row.fechaVencimiento) : new Date(),
       row.estado
     ));
   }

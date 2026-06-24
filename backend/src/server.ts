@@ -46,6 +46,13 @@ import { GetTasksByTenantUseCase } from './modules/task/application/get-tasks-by
 import { UpdateTaskStatusUseCase } from './modules/task/application/update-task-status.use-case.js';
 import { TaskController } from './modules/task/infrastructure/task.controller.js';
 
+// INYECCIÓN DE DEPENDENCIAS - MÓDULO DE DASHBOARD Y ANALÍTICAS
+import { PgDashboardRepository } from './modules/dashboard/infrastructure/pg-dashboard.repository.js';
+import { GetPipelineRevenueUseCase } from './modules/dashboard/application/get-pipeline-revenue.use-case.js';
+import { GetTasksEfficiencyUseCase } from './modules/dashboard/application/get-tasks-efficiency.use-case.js';
+import { GetAdvisorActivitiesUseCase } from './modules/dashboard/application/get-advisor-activities.use-case.js';
+import { DashboardController } from './modules/dashboard/infrastructure/dashboard.controller.js';
+
 
 dotenv.config();
 
@@ -58,7 +65,7 @@ await server.register(jwt, {
 }); 
 
 
-// Módulo de Autenticación
+
 // Módulo de Autenticación
 const userRepository = new PgUserRepository();
 const loginUseCase = new LoginUseCase(userRepository);
@@ -121,7 +128,17 @@ const updateTaskStatusUseCase = new UpdateTaskStatusUseCase(taskRepository);
 // 3. Ensamblamos el controlador pasándole sus dependencias puras
 const taskController = new TaskController(createTaskUseCase, getTasksByTenantUseCase, updateTaskStatusUseCase);
 
+// Módulo de Dashboard y Analíticas
+const dashboardRepository = new PgDashboardRepository();
+const getPipelineRevenueUseCase = new GetPipelineRevenueUseCase(dashboardRepository);
+const getTasksEfficiencyUseCase = new GetTasksEfficiencyUseCase(dashboardRepository);
+const getAdvisorActivitiesUseCase = new GetAdvisorActivitiesUseCase(dashboardRepository);
 
+const dashboardController = new DashboardController(
+  getPipelineRevenueUseCase,
+  getTasksEfficiencyUseCase,
+  getAdvisorActivitiesUseCase
+);
 
 // 2. DEFINIR LAS RUTAS DEL SISTEMA
 server.post('/api/auth/login', (request, reply) => authController.login(request, reply));
@@ -157,6 +174,12 @@ server.patch('/api/deals/:id/stage', (req, rep) => dealController.actualizarEtap
 server.post('/api/tasks', (req, rep) => taskController.crear(req, rep));
 server.get('/api/tasks', (req, rep) => taskController.listarTodas(req, rep));
 server.patch('/api/tasks/:id/status', (req, rep) => taskController.cambiarEstado(req, rep));
+
+// REGISTRO DE ENDPOINTS DEL DASHBOARD Y METRICAS CORPORATIVAS
+server.get('/api/dashboard/pipeline-revenue', (req, rep) => dashboardController.getPipelineRevenue(req, rep));
+server.get('/api/dashboard/tasks-efficiency', (req, rep) => dashboardController.getTasksEfficiency(req, rep));
+server.get('/api/dashboard/advisor-activities', (req, rep) => dashboardController.getAdvisorActivities(req, rep));
+
 
 // 3. ENCENDER EL SERVIDOR
 const start = async () => {

@@ -5,7 +5,7 @@
     "moduleResolution": "NodeNext",              /* Cómo TypeScript busca los archivos e instalaciones */
     "lib": ["ES2022"],                           /* Librerías de lenguaje que TypeScript reconocerá */
     "outDir": "./dist",                          /* Carpeta donde se guardará el código final listo para producción */
-    "rootDir": "./src",                          /* Carpeta raíz donde tú y yo vamos a escribir todo el código */
+    "rootDir": "backend/src",                          /* Carpeta raíz donde tú y yo vamos a escribir todo el código */
     "strict": true,                              /* Habilita TODAS las comprobaciones estrictas de seguridad de datos */
     "noImplicitAny": true,                       /* Prohíbe dejar datos con tipo "any" (evita que se salten las reglas de tipo) */
     "strictNullChecks": true,                    /* Evita el error más común del backend: intentar leer algo que no existe (null/undefined) */
@@ -13,5 +13,5 @@
     "skipLibCheck": true,                        /* Acelera la compilación ignorando errores menores de librerías externas */
     "forceConsistentCasingInFileNames": true     /* Evita problemas si trabajas en Windows/Mac/Linux con mayúsculas y minúsculas */
   },
-  "include": ["src/**/*"]                        /* Le dice a TypeScript que solo vigile e inspeccione la carpeta src */
+  "include": ["backend/src/**/*"]                        /* Le dice a TypeScript que solo vigile e inspeccione la carpeta src */
 }
