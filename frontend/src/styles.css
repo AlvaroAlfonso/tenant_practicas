@@ -1,18 +1,31 @@
 /* frontend/src/styles.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-/* Inyección de los núcleos de Tailwind CSS */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Inyección del diseño corporativo y tipografías de PrimeNG */
-@import "primeng/resources/themes/lara-light-blue/theme.css";
-@import "primeng/resources/primeng.min.css";
+/* 1. Iconos globales del sistema */
 @import "primeicons/primeicons.css";
 
+/* 2. Inyección unificada global de Tailwind CSS v4 */
+@import "tailwindcss";
+
+/* 3. Estilos base del cuerpo de la aplicación corporativa */
 body {
-    margin: 0;
-    font-family: var(--font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
-    background-color: #f8fafc; /* Color pizarra suave: reduce la fatiga visual (Principios de Usabilidad UX) */
-    color: #1e293b;
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #f8fafc; /* Slate 50 */
+  color: #0f172a; /* Slate 900 */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Forzar que los componentes input de PrimeNG v19 ocupen todo el ancho con Tailwind */
+.p-inputtext, .p-password, .p-password input {
+  width: 100% !important;
+}
+
+/* Animación de entrada para mensajes de error */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
 }
