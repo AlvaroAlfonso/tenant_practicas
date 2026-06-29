@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { LoginUseCase } from '../application/login.use-case.js';
 import { CreateMemberUseCase } from '../application/create-member.use-case.js';
+import { RegisterTenantUseCase } from '../application/register-tenant.use-case.js';
 
 /**
  * Adaptador de Entrada (Controlador HTTP).
@@ -10,7 +11,8 @@ export class AuthController {
   // Inyectamos ambos casos de uso a través del constructor
   constructor(
     private loginUseCase: LoginUseCase,
-    private createMemberUseCase: CreateMemberUseCase
+    private createMemberUseCase: CreateMemberUseCase,
+    private registerTenantUseCase: RegisterTenantUseCase
   ) {}
 
   /**
@@ -108,6 +110,39 @@ export class AuthController {
       }
 
       // Capturamos las validaciones de negocio del caso de uso (ej. correo duplicado)
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: error.message
+      });
+    }
+  }
+  async registerTenant(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { nombreComercial, rfcNit, emailPrincipal, username, nombreAdmin, password } = request.body as any;
+
+      // Validación preventiva estricta antes de tocar base de datos
+      if (!nombreComercial || !rfcNit || !emailPrincipal || !username || !nombreAdmin || !password) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Todos los campos corporativos y de usuario son mandatorios.'
+        });
+      }
+
+      const resultado = await this.registerTenantUseCase.execute({
+        nombreComercial,
+        rfcNit,
+        emailPrincipal,
+        username,
+        nombreAdmin,
+        passwordPlana: password
+      });
+
+      return reply.status(201).send({
+        message: 'Empresa y cuenta de administrador configurados con éxito.',
+        data: resultado
+      });
+
+    } catch (error: any) {
       return reply.status(400).send({
         error: 'Bad Request',
         message: error.message

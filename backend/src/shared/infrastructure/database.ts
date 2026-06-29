@@ -1,25 +1,30 @@
 // src/shared/infrastructure/database.ts
 import pg from 'pg';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Inicializar dotenv para que lea el archivo .env de la raíz del proyecto
-dotenv.config();
+// Validar la ruta absoluta del archivo .env para evitar fallos de ubicación en Windows
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Escalamos hacia la raíz del backend (saliendo de shared, infrastructure y src)
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
 const { Pool } = pg;
 
 /**
  * Configuración centralizada del Pool de conexiones a PostgreSQL.
- * Al usar variables de entorno, blindamos las credenciales del negocio.
  */
 export const pool = new Pool({
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  host: process.env.DB_HOST,
+  user: process.env.DB_USER || 'alvaro_andres_dev',
+  password: process.env.DB_PASSWORD || 'Alvaro1998',
+  host: process.env.DB_HOST || 'localhost',
   port: Number(process.env.DB_PORT) || 5432,
-  database: process.env.DB_NAME,
-  max: 20,                                     // Máximo de conexiones simultáneas en el pool
-  idleTimeoutMillis: 30000,                    // Cierra conexiones inactivas después de 30 segundos
-  connectionTimeoutMillis: 2000,               // Tiempo máximo de espera para conectar antes de dar error
+  database: process.env.DB_NAME || 'bd_multitenant',
+  max: 20,                                      
+  idleTimeoutMillis: 30000,                    
+  connectionTimeoutMillis: 2000,               
 });
 
 // Monitor de eventos del Pool para diagnóstico del Backend

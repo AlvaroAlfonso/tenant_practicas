@@ -2,6 +2,7 @@
 import fastify from 'fastify';
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
+import cors from '@fastify/cors';
 import dotenv from 'dotenv';
 
 // Módulo de Autenticación (Bloque 1)
@@ -9,6 +10,7 @@ import { PgUserRepository } from './modules/auth/infrastructure/pg-user.reposito
 import { LoginUseCase } from './modules/auth/application/login.use-case.js';
 import { CreateMemberUseCase } from './modules/auth/application/create-member.use-case.js'; // <- NUEVA LÍNEA
 import { AuthController } from './modules/auth/infrastructure/auth.controller.js';
+import { RegisterTenantUseCase } from './modules/auth/application/register-tenant.use-case.js';
 
 // NUEVAS IMPORTACIONES: Módulo de Tenants (Bloque 2)
 import { PgTenantRepository } from './modules/tenant/infrastructure/pg-tenant.repository.js';
@@ -63,6 +65,11 @@ await server.register(helmet);
 await server.register(jwt, {
   secret: process.env.JWT_SECRET || 'secreto_alterno_por_seguridad'
 }); 
+await server.register(cors, {
+  origin: 'http://localhost:4200', // Autoriza únicamente a tu aplicación Angular
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+});
 
 
 
@@ -71,8 +78,9 @@ const userRepository = new PgUserRepository();
 const loginUseCase = new LoginUseCase(userRepository);
 const createMemberUseCase = new CreateMemberUseCase(userRepository); 
 // Ensamblamos el controlador pasándole ambos casos de uso en orden
-const authController = new AuthController(loginUseCase, createMemberUseCase); // <- MODIFICADO
+const registerTenantUseCase = new RegisterTenantUseCase(); // <- MODIFICADO
 
+const authController = new AuthController(loginUseCase, createMemberUseCase, registerTenantUseCase);
 
 // Módulo de Tenants 
 const tenantRepository = new PgTenantRepository();
@@ -141,7 +149,8 @@ const dashboardController = new DashboardController(
 );
 
 // 2. DEFINIR LAS RUTAS DEL SISTEMA
-server.post('/api/auth/login', (request, reply) => authController.login(request, reply));
+server.post('/api/auth/login', authController.login.bind(authController));
+server.post('/api/auth/register-tenant', (req, rep) => authController.registerTenant(req, rep));
 // Nueva Ruta Protegida para registrar asesores/miembros del equipo
 server.post('/api/auth/members', (req, rep) => authController.registerMember(req, rep));
 
