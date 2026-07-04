@@ -7,12 +7,20 @@ export const routes: Routes = [
     loadComponent: () => import('./core/components/login/login.component').then(m => m.LoginComponent)
   },
   {
+    path: 'register-tenant',
+    loadComponent: () => import('./modules/auth/pages/register-tenant/register-tenant.component').then(m => m.RegisterTenantComponent)
+  },
+  {
     path: 'dashboard',
-    loadComponent: () => import('./core/components/dashboar/dashboard.component').then(m => m.DashboardComponent)
+    loadComponent: () => import('./modules/dashboard/pages/dashboard-home/dashboard-home').then(m => m.DashboardHomeComponent)
   },
   {
     path: '',
     redirectTo: 'login',
-    pathMatch: 'full'
+    pathMatch: 'full' // ¡Corregido! Antes decía matchPath y causaba error TS2353
+  },
+  {
+    path: '**',
+    redirectTo: 'login' // Comodín de seguridad ante rutas inexistentes
   }
 ];

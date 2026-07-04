@@ -1,10 +1,7 @@
-<!-- frontend/src/app/core/components/login/login.component.html -->
-<div class="min-h-screen w-full flex flex-col items-center justify-center bg-slate-100 px-4 py-12" style="background-color: #f1f5f9; display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+<div class="min-h-screen w-full flex flex-col items-center justify-center bg-slate-100 px-4 py-12" style="background-color: #f1f5f9; display: flex; align-items: center; justify-content: center; min-height: 100vh; box-sizing: border-box;">
   
-  <!-- Tarjeta con estilos inline de respaldo por si Tailwind falla en compilar -->
   <div class="w-full max-w-md bg-white rounded-2xl p-8 shadow-xl" style="background: white; border-radius: 1rem; padding: 2.5rem; max-width: 440px; width: 100%; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); box-sizing: border-box;">
     
-    <!-- ENTRADA 1: VISTA DE INICIO DE SESIÓN -->
     <div *ngIf="!isForgotPassword">
       <div class="text-center mb-8" style="text-align: center; margin-bottom: 2rem;">
         <h2 style="font-size: 1.85rem; font-weight: 800; color: #0f172a; margin: 0 0 0.5rem 0;">
@@ -17,7 +14,6 @@
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-6" style="display: flex; flex-direction: column; gap: 1.5rem;">
         
-        <!-- Campo Correo -->
         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
           <label for="email" style="font-size: 0.875rem; font-weight: 600; color: #334155;">Correo Electrónico</label>
           <input pInputText id="email" type="email" formControlName="email" placeholder="nombre@empresa.com" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; box-sizing: border-box;" />
@@ -26,11 +22,9 @@
           </div>
         </div>
 
-        <!-- Campo Contraseña -->
         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <label for="password" style="font-size: 0.875rem; font-weight: 600; color: #334155;">Contraseña</label>
-            <!-- LINK DE OLVIDÉ MI CONTRASEÑA -->
             <a (click)="toggleForgotPassword(true)" style="font-size: 0.825rem; color: #0d9488; font-weight: 600; cursor: pointer; text-decoration: none;">¿Olvidó su contraseña?</a>
           </div>
           <p-password id="password" formControlName="password" [toggleMask]="true" [feedback]="false" placeholder="••••••••" styleClass="w-full" inputStyleClass="w-full" style="width: 100%;"></p-password>
@@ -47,7 +41,6 @@
       </form>
     </div>
 
-    <!-- ENTRADA 2: VISTA DE RECUPERACIÓN DE CONTRASEÑA -->
     <div *ngIf="isForgotPassword">
       <div class="text-center mb-8" style="text-align: center; margin-bottom: 2rem;">
         <h2 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0 0 0.5rem 0;">
@@ -58,22 +51,26 @@
         </p>
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+      <form [formGroup]="recoveryForm" (ngSubmit)="onSendRecoveryLink()" style="display: flex; flex-direction: column; gap: 1.5rem;">
+        
         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
           <label for="recoveryEmail" style="font-size: 0.875rem; font-weight: 600; color: #334155;">Correo Electrónico</label>
-          <input pInputText id="recoveryEmail" type="email" [(ngModel)]="recoveryEmail" placeholder="nombre@empresa.com" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; box-sizing: border-box;" />
+          <input pInputText id="recoveryEmail" type="email" formControlName="recoveryEmail" placeholder="nombre@empresa.com" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; box-sizing: border-box;" />
+          <div *ngIf="recoveryForm.get('recoveryEmail')?.invalid && recoveryForm.get('recoveryEmail')?.touched" style="color: #ef4444; font-size: 0.75rem; font-weight: 500; margin-top: 0.25rem;">
+            <i class="pi pi-exclamation-circle"></i> Se requiere un formato de correo electrónico válido.
+          </div>
         </div>
 
         <div *ngIf="recoverySuccessMessage" style="padding: 0.75rem; background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; border-radius: 0.5rem; font-size: 0.875rem;">
           {{ recoverySuccessMessage }}
         </div>
 
-        <button pButton type="button" label="Enviar Enlace de Recuperación" icon="pi pi-envelope" [disabled]="!recoveryEmail || isLoading" (click)="onSendRecoveryLink()" style="width: 100%; background: #0d9488; color: white; padding: 0.75rem; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer;"></button>
+        <button pButton type="submit" label="Enviar Enlace de Recuperación" icon="pi pi-envelope" [disabled]="recoveryForm.invalid || isLoading" style="width: 100%; background: #0d9488; color: white; padding: 0.75rem; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer;"></button>
         
         <div style="text-align: center; margin-top: 0.5rem;">
           <a (click)="toggleForgotPassword(false)" style="font-size: 0.875rem; color: #64748b; font-weight: 600; cursor: pointer; text-decoration: underline;">Volver al Inicio de Sesión</a>
         </div>
-      </div>
+      </form>
     </div>
 
   </div>

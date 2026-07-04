@@ -24,43 +24,48 @@ export class PgCustomerRepository implements CustomerRepository {
   }
 
   async findByTenant(tenantId: string): Promise<Customer[]> {
-    // Solo traemos los clientes cuyo tenant_id coincida y no hayan sido desvinculados (tenant_id no nulo)
+    // Aplicamos tu query con LEFT JOIN para que en el atributo 'empresa' viaje el nombre comercial legible si existe
     const query = `
-      SELECT id, tenant_id AS "tenantId", nombre, empresa, correo, telefono, created_at AS "createdAt"
-      FROM cliente
-      WHERE tenant_id = $1
-      ORDER BY created_at DESC;
+      SELECT 
+        c.id, 
+        c.tenant_id AS "tenantId", 
+        c.nombre, 
+        COALESCE(ec.razon_social, c.empresa) AS "empresaName",
+        c.correo, 
+        c.telefono, 
+        c.created_at AS "createdAt"
+      FROM cliente c
+      LEFT JOIN empresa_cliente ec ON c.empresa = ec.id::text AND c.tenant_id = ec.tenant_id
+      WHERE c.tenant_id = $1
+      ORDER BY c.created_at DESC;
     `;
     const values = [tenantId];
-
     const result = await pool.query(query, values);
 
     return result.rows.map(row => new Customer(
       row.id,
       row.tenantId,
       row.nombre,
-      row.empresa,
-      row.correo,
-      row.telefono,
+      row.empresaName || '',
+      row.correo || '',
+      row.telefono || '',
       row.createdAt
     ));
   }
 
   async findById(id: string, tenantId: string): Promise<Customer | null> {
-    // Doble validación de seguridad: por ID del cliente y por ID del Tenant
     const query = `
       SELECT id, tenant_id AS "tenantId", nombre, empresa, correo, telefono, created_at AS "createdAt"
       FROM cliente
       WHERE id = $1 AND tenant_id = $2;
     `;
     const values = [id, tenantId];
-
     const result = await pool.query(query, values);
 
     if (result.rows.length === 0) return null;
     const row = result.rows[0];
 
-    return new Customer(row.id, row.tenantId, row.nombre, row.empresa, row.correo, row.telefono, row.createdAt);
+    return new Customer(row.id, row.tenantId, row.nombre, row.empresa || '', row.correo || '', row.telefono || '', row.createdAt);
   }
 
   async update(customer: Customer): Promise<Customer> {
@@ -75,16 +80,13 @@ export class PgCustomerRepository implements CustomerRepository {
     const result = await pool.query(query, values);
     const row = result.rows[0];
 
-    return new Customer(row.id, row.tenantId, row.nombre, row.empresa, row.correo, row.telefono, row.createdAt);
+    return new Customer(row.id, row.tenantId, row.nombre, row.empresa || '', row.correo || '', row.telefono || '', row.createdAt);
   }
 
   async deleteLogical(id: string, tenantId: string): Promise<boolean> {
-    // BORRADO LÓGICO INDUSTRIAL: En lugar de hacer un DELETE físico que rompa el histórico, 
-    // seteamos el correo con un prefijo '[ELIMINADO]' y desvinculamos el tenant_id activo 
-    // pasándolo a NULL (o un id histórico), de modo que desaparece del tenant actual pero el registro físico queda para analítica.
     const query = `
       UPDATE cliente
-      SET tenant_id = NULL, correo = CONCAT('[ELIMINADO]-', correo)
+      SET tenant_id = NULL, correo = CONCAT('[ELIMINADO]-', COALESCE(correo, ''))
       WHERE id = $1 AND tenant_id = $2;
     `;
     const values = [id, tenantId];

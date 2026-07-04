@@ -1,0 +1,86 @@
+<div class="container d-flex align-items-center justify-content-center min-vh-100 py-5">
+  <div class="card shadow-lg border-0 w-100" style="max-width: 700px;">
+    <div class="card-body p-5">
+      
+      <div class="text-center mb-4">
+        <h2 class="fw-bold text-primary">Alta de Nueva Organización SaaS</h2>
+        <p class="text-muted text-sm">Configura los parámetros de tu empresa y la cuenta de superusuario inicial.</p>
+      </div>
+
+      <div *ngIf="errorMessage" class="alert alert-danger role-alert text-center fw-semibold">
+        ❌ {{ errorMessage }}
+      </div>
+      <div *ngIf="successMessage" class="alert alert-success role-alert text-center fw-semibold">
+        🚀 {{ successMessage }}
+      </div>
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+        
+        <h5 class="border-bottom pb-2 mb-3 text-secondary fw-bold">1. Datos Corporativos de la Empresa</h5>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold">Nombre Comercial</label>
+            <input type="text" formControlName="nombreComercial" class="form-control" placeholder="Ej: Active Process SAS">
+            <div *ngIf="registerForm.get('nombreComercial')?.touched && registerForm.get('nombreComercial')?.invalid" class="text-danger small mt-1">
+              El nombre es obligatorio (mínimo 3 letras).
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold">RFC / NIT de la Compañía</label>
+            <input type="text" formControlName="rfcNit" class="form-control" placeholder="Ej: 901234567-1">
+            <div *ngIf="registerForm.get('rfcNit')?.touched && registerForm.get('rfcNit')?.invalid" class="text-danger small mt-1">
+              NIT válido mandatorio (solo números y guiones).
+            </div>
+          </div>
+        </div>
+
+        <h5 class="border-bottom pb-2 mb-3 mt-4 text-secondary fw-bold">2. Credenciales del Administrador Maestro</h5>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold">Nombre Completo</label>
+            <input type="text" formControlName="nombreAdmin" class="form-control" placeholder="Ej: Álvaro Rodríguez">
+            <div *ngIf="registerForm.get('nombreAdmin')?.touched && registerForm.get('nombreAdmin')?.invalid" class="text-danger small mt-1">
+              El nombre del administrador es requerido.
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold">Nombre de Usuario (Username)</label>
+            <input type="text" formControlName="username" class="form-control" placeholder="Ej: alvaro_admin">
+            <div *ngIf="registerForm.get('username')?.touched && registerForm.get('username')?.invalid" class="text-danger small mt-1">
+              Nombre de usuario alfanumérico inválido (Mínimo 4 caracteres).
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Correo Electrónico Corporativo</label>
+          <input type="email" formControlName="emailPrincipal" class="form-control" placeholder="admin@activeprocess.com">
+          <div *ngIf="registerForm.get('emailPrincipal')?.touched && registerForm.get('emailPrincipal')?.invalid" class="text-danger small mt-1">
+            Por favor ingresa una dirección de correo estructurada y válida.
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Contraseña del Sistema</label>
+          <input type="password" formControlName="password" class="form-control" placeholder="••••••••">
+          <div *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.invalid" class="text-danger small mt-1">
+            La contraseña debe contener un mínimo de 6 caracteres.
+          </div>
+        </div>
+
+        <div class="d-grid mt-4">
+          <button type="submit" [disabled]="registerForm.invalid || isSubmitting" class="btn btn-primary btn-lg fw-bold shadow-sm">
+            <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+            Provisionar Entorno Multi-Inquilino
+          </button>
+        </div>
+
+        <div class="text-center mt-3">
+          <a routerLink="/auth/login" class="text-decoration-none text-sm text-primary">¿Ya tienes una organización? Inicia sesión aquí</a>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>

@@ -1,52 +1,52 @@
 // frontend/src/app/core/services/auth.service.ts
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
-import { LoginCredentials, AuthResponse } from '../models/auth.models';
+import { Observable } from 'rxjs';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private http = inject(HttpClient);
-  private readonly API_URL = 'http://localhost:3000/api/auth';
-  private readonly TOKEN_KEY = 'crm_saas_jwt_token';
+  // Ajusta el puerto según el entorno donde corra tu Fastify (ej: http://localhost:3000)
+  private apiUrl = 'http://localhost:3000/api/auth';
+
+  constructor(
+    private http: HttpClient,
+    private router: Router
+  ) {}
 
   /**
-   * Despacha las credenciales al backend y almacena el token si el acceso es válido.
+   * Realiza la petición HTTP POST real al backend de Fastify
    */
-  login(credentials: LoginCredentials): Observable<AuthResponse> {
-    // Transformamos la interfaz de UI al contrato exacto que espera tu Fastify Server
-    const payload = {
-      email: credentials.email,
-      password: credentials.passwordHash
-    };
-
-    return this.http.post<AuthResponse>(`${this.API_URL}/login`, payload).pipe(
-      tap(response => {
-        if (response && response.token) {
-          this.setToken(response.token);
-        }
-      })
-    );
+  login(credentials: { email: string; password: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/login`, credentials);
   }
 
   /**
-   * Métodos de utilidad segura para la persistencia del Token JWT
+   * Guarda de forma segura el token JWT en el navegador
    */
-  setToken(token: string): void {
-    localStorage.setItem(this.TOKEN_KEY, token);
+  saveSession(token: string, user: any): void {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
   }
 
+  /**
+   * Soluciona Error en auth.interceptor.ts:
+   * Recupera el token guardado para las cabeceras de Fastify
+   */
   getToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
+    return localStorage.getItem('token');
   }
 
+  /**
+   * Soluciona Error en dashboard.component.ts:
+   * Limpia el almacenamiento de la sesión corporativa y redirige al login
+   */
   logout(): void {
-    localStorage.removeItem(this.TOKEN_KEY);
-  }
-
-  isAuthenticated(): boolean {
-    return !!this.getToken();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    console.log('🔒 [Auth]: Sesión destruida con éxito. Redirigiendo al Login...');
+    this.router.navigate(['/login']);
   }
 }

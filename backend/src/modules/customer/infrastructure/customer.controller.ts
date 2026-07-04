@@ -1,6 +1,6 @@
-// src/modules/customer/infrastructure/customer.controller.ts
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { CreateCustomerUseCase } from '../application/create-customer.use-case.js';
+// 💡 Cambiamos la importación para usar el caso de uso real de la empresa cliente
+import { CreateCompanyClientUseCase } from '../application/create-company-client.use-case.js';
 import { GetCustomersByTenantUseCase } from '../application/get-customers-by-tenant.use-case.js';
 import { GetCustomerByIdUseCase } from '../application/get-customer-by-id.use-case.js';
 import { UpdateCustomerUseCase } from '../application/update-customer.use-case.js';
@@ -8,30 +8,33 @@ import { DeleteCustomerUseCase } from '../application/delete-customer.use-case.j
 
 /**
  * Adaptador de Entrada: Controlador HTTP para el Módulo de Clientes.
- * Centraliza y despacha todo el ciclo de vida de los clientes B2B bajo aislamiento estricto.
  */
 export class CustomerController {
   constructor(
-    private createCustomerUseCase: CreateCustomerUseCase,
+    // 💡 Cambiamos el tipo aquí para que coincida con el caso de uso real
+    private createCustomerUseCase: CreateCompanyClientUseCase,
     private getCustomersByTenantUseCase: GetCustomersByTenantUseCase,
     private getCustomerByIdUseCase: GetCustomerByIdUseCase,
     private updateCustomerUseCase: UpdateCustomerUseCase,
     private deleteCustomerUseCase: DeleteCustomerUseCase
   ) {}
 
-  // =======================================================================
+ // =======================================================================
   // 1. CREAR CLIENTE (POST /api/customers)
   // =======================================================================
   async crear(request: FastifyRequest, reply: FastifyReply) {
     try {
       await request.jwtVerify(); // Validamos firma del pase VIP
       const user = request.user as { tenantId: string };
-      const body = request.body as { nombre: string; empresa: string; correo: string; telefono: string };
+      
+      // 💡 Alineamos el cuerpo con los campos reales del caso de uso
+      const body = request.body as { nitRut: string; razonSocial: string };
 
-      // Inyectamos el tenantId de forma segura desde el token al caso de uso
+      // Inyectamos el tenantId de forma segura desde el token al caso de uso real
       const nuevoCliente = await this.createCustomerUseCase.execute({
         tenantId: user.tenantId,
-        ...body
+        nitRut: body.nitRut,
+        razonSocial: body.razonSocial
       });
 
       return reply.status(201).send({
@@ -42,7 +45,6 @@ export class CustomerController {
       return reply.status(400).send({ error: 'Bad Request', message: error.message });
     }
   }
-
   // =======================================================================
   // 2. LISTAR TODOS LOS CLIENTES DEL TENANT (GET /api/customers)
   // =======================================================================

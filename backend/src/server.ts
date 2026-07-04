@@ -10,6 +10,7 @@ import { PgUserRepository } from './modules/auth/infrastructure/pg-user.reposito
 import { LoginUseCase } from './modules/auth/application/login.use-case.js';
 import { CreateMemberUseCase } from './modules/auth/application/create-member.use-case.js'; // <- NUEVA LÍNEA
 import { AuthController } from './modules/auth/infrastructure/auth.controller.js';
+// Línea 13 de tu server.ts
 import { RegisterTenantUseCase } from './modules/auth/application/register-tenant.use-case.js';
 
 // NUEVAS IMPORTACIONES: Módulo de Tenants (Bloque 2)

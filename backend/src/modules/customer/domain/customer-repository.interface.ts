@@ -1,3 +1,4 @@
+// backend/src/modules/customers/domain/customer-repository.interface.ts
 import { Customer } from './customer.entity.js';
 
 /**
