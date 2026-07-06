@@ -1,3 +1,4 @@
+//backend/src/modules/auth/domain/user-repository.interface.ts
 import { User } from './user.entity.js';
 
 export interface UserRepository {

@@ -1,3 +1,4 @@
+//backend/src/modules/auth/domain/user.entity.ts
 export interface User {
   id: string;            // Mapea con el UUID de la tabla "usuario"
   username: string;      // Nombre de usuario único

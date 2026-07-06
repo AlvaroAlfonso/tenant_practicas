@@ -1,3 +1,5 @@
+
+//backend/src/modules/customer/infrastructure/customer.controller.ts
 import { FastifyRequest, FastifyReply } from 'fastify';
 // 💡 Cambiamos la importación para usar el caso de uso real de la empresa cliente
 import { CreateCompanyClientUseCase } from '../application/create-company-client.use-case.js';
@@ -21,20 +23,18 @@ export class CustomerController {
 
  // =======================================================================
   // 1. CREAR CLIENTE (POST /api/customers)
-  // =======================================================================
-  async crear(request: FastifyRequest, reply: FastifyReply) {
+ async crear(request: FastifyRequest, reply: FastifyReply) {
     try {
-      await request.jwtVerify(); // Validamos firma del pase VIP
+      await request.jwtVerify();
       const user = request.user as { tenantId: string };
       
-      // 💡 Alineamos el cuerpo con los campos reales del caso de uso
-      const body = request.body as { nitRut: string; razonSocial: string };
+      // Capturamos las variables correctas que pasan por el validador
+      const body = request.body as { empresa: string; nombre: string };
 
-      // Inyectamos el tenantId de forma segura desde el token al caso de uso real
       const nuevoCliente = await this.createCustomerUseCase.execute({
         tenantId: user.tenantId,
-        nitRut: body.nitRut,
-        razonSocial: body.razonSocial
+        nitRut: body.empresa,       // Mapeamos al caso de uso
+        razonSocial: body.nombre
       });
 
       return reply.status(201).send({

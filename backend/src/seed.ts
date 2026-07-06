@@ -20,7 +20,7 @@ async function runSeed() {
     await client.query("DELETE FROM usuario WHERE email = 'prueba@process.com';");
 
     // 2. Generar el Hash usando la EXACTA misma librería de tu backend
-    const passwordPlana = '@Prueba2026';
+    const passwordPlana = '123456';
     const saltRounds = 10;
     const hashGenerado = await bcrypt.hash(passwordPlana, saltRounds);
     

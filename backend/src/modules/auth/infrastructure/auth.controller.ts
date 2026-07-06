@@ -1,3 +1,4 @@
+//backend/src/auth/infrastructure/auth.controller.ts
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { LoginUseCase } from '../application/login.use-case.js';
 import { CreateMemberUseCase } from '../application/create-member.use-case.js';
