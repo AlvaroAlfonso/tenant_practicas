@@ -6,8 +6,8 @@ import { Customer } from '../domain/customer.entity.js';
 // Estructura limpia que describe los datos necesarios para registrar un cliente nuevo
 interface CreateCustomerInput {
   tenantId: string;
-  nombre: string;
-  empresa: string;
+  nombre: string;    // Recibe la Razón Social de la petición
+  empresa: string;   // Recibe el NIT/RUT de la petición
   correo: string;
   telefono: string;
 }
@@ -25,12 +25,11 @@ export class CreateCustomerUseCase {
     const customer = new Customer(
       nuevoId,
       input.tenantId,
-      input.nombre,
-      input.empresa,
+      input.empresa,   // Se almacena como nitRut
+      input.nombre,    // Se almacena como razonSocial
       input.correo,
       input.telefono
     );
-
     return await this.customerRepository.create(customer);
   }
 }

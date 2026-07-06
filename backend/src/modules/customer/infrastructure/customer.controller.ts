@@ -1,65 +1,81 @@
 
 //backend/src/modules/customer/infrastructure/customer.controller.ts
 import { FastifyRequest, FastifyReply } from 'fastify';
-// 💡 Cambiamos la importación para usar el caso de uso real de la empresa cliente
-import { CreateCompanyClientUseCase } from '../application/create-company-client.use-case.js';
+// 💡 Importamos el caso de uso alineado con la tabla cliente y los contratos de tu backend
+import { CreateCustomerUseCase } from '../application/create-customer.use-case.js';
 import { GetCustomersByTenantUseCase } from '../application/get-customers-by-tenant.use-case.js';
 import { GetCustomerByIdUseCase } from '../application/get-customer-by-id.use-case.js';
 import { UpdateCustomerUseCase } from '../application/update-customer.use-case.js';
 import { DeleteCustomerUseCase } from '../application/delete-customer.use-case.js';
 
 /**
+ * Interfaz explícita para resolver el error de tipado en request.user de Fastify
+ */
+interface AuthenticatedUser {
+  id: string;
+  tenantId: string;
+  email: string;
+}
+
+/**
  * Adaptador de Entrada: Controlador HTTP para el Módulo de Clientes.
  */
 export class CustomerController {
   constructor(
-    // 💡 Cambiamos el tipo aquí para que coincida con el caso de uso real
-    private createCustomerUseCase: CreateCompanyClientUseCase,
+    // 💡 Ajustamos el tipo aquí para que no choque con CreateCompanyClientInput
+    private createCustomerUseCase: CreateCustomerUseCase,
     private getCustomersByTenantUseCase: GetCustomersByTenantUseCase,
     private getCustomerByIdUseCase: GetCustomerByIdUseCase,
     private updateCustomerUseCase: UpdateCustomerUseCase,
     private deleteCustomerUseCase: DeleteCustomerUseCase
   ) {}
 
- // =======================================================================
-  // 1. CREAR CLIENTE (POST /api/customers)
- async crear(request: FastifyRequest, reply: FastifyReply) {
-    try {
-      await request.jwtVerify();
-      const user = request.user as { tenantId: string };
-      
-      // Capturamos las variables correctas que pasan por el validador
-      const body = request.body as { empresa: string; nombre: string };
-
-      const nuevoCliente = await this.createCustomerUseCase.execute({
-        tenantId: user.tenantId,
-        nitRut: body.empresa,       // Mapeamos al caso de uso
-        razonSocial: body.nombre
-      });
-
-      return reply.status(201).send({
-        message: 'Cliente corporativo registrado con éxito',
-        customer: nuevoCliente
-      });
-    } catch (error: any) {
-      return reply.status(400).send({ error: 'Bad Request', message: error.message });
-    }
-  }
   // =======================================================================
-  // 2. LISTAR TODOS LOS CLIENTES DEL TENANT (GET /api/customers)
+  // 1. CREAR CLIENTE (POST /api/customers)
+  // =======================================================================
+  async crear(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    // 🕵️‍♂️ LOG 2: Verificamos qué llegó exactamente al backend en la petición HTTP
+    console.log('📥 [BACKEND CONTROLLER] Datos recibidos en request.body:', request.body);
+    console.log('📥 [BACKEND CONTROLLER] Usuario decodificado en request.user:', request.user);
+
+    await request.jwtVerify();
+    const user = request.user as AuthenticatedUser;
+    const body = request.body as { nombre: string; empresa: string; correo?: string; telefono?: string };
+
+    // 🕵️‍♂️ LOG 3: Verificamos los datos mapeados justo antes de ir al Caso de Uso
+    console.log('⚙️ [BACKEND CONTROLLER] Pasando al Caso de Uso -> tenantId:', user.tenantId, 'nombre:', body.nombre, 'empresa:', body.empresa);
+
+    const nuevoCliente = await this.createCustomerUseCase.execute({
+      tenantId: user.tenantId,
+      nombre: body.nombre,     
+      empresa: body.empresa,   
+      correo: body.correo || '',
+      telefono: body.telefono || ''
+    });
+
+    return reply.status(201).send(nuevoCliente);
+  } catch (error: any) {
+    // 🕵️‍♂️ LOG 4: Captura detallada si el error ocurriera DENTRO del controlador o del Caso de Uso
+    console.error('❌ [BACKEND CONTROLLER ERROR] Se detectó un fallo en el proceso:', error.message);
+    return reply.status(400).send({ error: 'Bad Request', message: error.message });
+  }
+}
+
+  // =======================================================================
+  // 2. LISTAR EMPRESAS CLIENTE DEL TENANT (GET /api/customers)
   // =======================================================================
   async listarTodos(request: FastifyRequest, reply: FastifyReply) {
     try {
       await request.jwtVerify();
-      const user = request.user as { tenantId: string };
+      const user = request.user as AuthenticatedUser;
 
-      // Traemos únicamente la colección blindada de este inquilino
-      const clientes = await this.getCustomersByTenantUseCase.execute(user.tenantId);
+      const empresas = await this.getCustomersByTenantUseCase.execute(user.tenantId);
 
       return reply.status(200).send({
-        message: 'Listado de clientes recuperado con éxito',
-        count: clientes.length,
-        customers: clientes
+        message: 'Listado de empresas clientes recuperado con éxito',
+        count: empresas.length,
+        customers: empresas
       });
     } catch (error: any) {
       return reply.status(401).send({ error: 'Unauthorized', message: error.message });
@@ -67,19 +83,19 @@ export class CustomerController {
   }
 
   // =======================================================================
-  // 3. OBTENER UN CLIENTE ESPECÍFICO POR ID (GET /api/customers/:id)
+  // 3. OBTENER POR ID (GET /api/customers/:id)
   // =======================================================================
   async obtenerPorId(request: FastifyRequest, reply: FastifyReply) {
     try {
       await request.jwtVerify();
-      const user = request.user as { tenantId: string };
-      const { id } = request.params as { id: string }; // Extraemos el ID de la URL
+      const user = request.user as AuthenticatedUser;
+      const { id } = request.params as { id: string };
 
-      const cliente = await this.getCustomerByIdUseCase.execute(id, user.tenantId);
+      const empresa = await this.getCustomerByIdUseCase.execute(id, user.tenantId);
 
       return reply.status(200).send({
-        message: 'Expediente de cliente encontrado',
-        customer: cliente
+        message: 'Empresa cliente encontrada',
+        customer: empresa
       });
     } catch (error: any) {
       return reply.status(404).send({ error: 'Not Found', message: error.message });
@@ -87,23 +103,27 @@ export class CustomerController {
   }
 
   // =======================================================================
-  // 4. ACTUALIZAR CLIENTE (PUT /api/customers/:id)
+  // 4. ACTUALIZAR (PUT /api/customers/:id)
   // =======================================================================
   async actualizar(request: FastifyRequest, reply: FastifyReply) {
     try {
       await request.jwtVerify();
-      const user = request.user as { tenantId: string };
+      const user = request.user as AuthenticatedUser;
       const { id } = request.params as { id: string };
-      const body = request.body as { nombre: string; empresa: string; correo: string; telefono: string };
+      const body = request.body as { nombre: string; empresa: string; correo?: string; telefono?: string };
 
+      // Mapeamos los campos exactos que exige UpdateCustomerInput sin errores
       const clienteActualizado = await this.updateCustomerUseCase.execute({
         id,
         tenantId: user.tenantId,
-        ...body
+        nombre: body.nombre,
+        empresa: body.empresa,
+        correo: body.correo || '',
+        telefono: body.telefono || ''
       });
 
       return reply.status(200).send({
-        message: 'Datos del cliente actualizados correctamente',
+        message: 'Datos comerciales actualizados correctamente',
         customer: clienteActualizado
       });
     } catch (error: any) {
@@ -112,18 +132,18 @@ export class CustomerController {
   }
 
   // =======================================================================
-  // 5. BORRADO LÓGICO DE CLIENTE (DELETE /api/customers/:id)
+  // 5. BORRADO (DELETE /api/customers/:id)
   // =======================================================================
   async eliminar(request: FastifyRequest, reply: FastifyReply) {
     try {
       await request.jwtVerify();
-      const user = request.user as { tenantId: string };
+      const user = request.user as AuthenticatedUser;
       const { id } = request.params as { id: string };
 
       await this.deleteCustomerUseCase.execute(id, user.tenantId);
 
       return reply.status(200).send({
-        message: 'Cliente dado de baja del sistema correctamente (Borrado lógico exitoso)'
+        message: 'Empresa cliente eliminada del CRM correctamente'
       });
     } catch (error: any) {
       return reply.status(400).send({ error: 'Bad Request', message: error.message });

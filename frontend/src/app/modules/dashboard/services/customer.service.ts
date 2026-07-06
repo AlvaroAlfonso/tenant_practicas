@@ -1,11 +1,8 @@
 //frontend/src/app/modules/dashboard/services/customer.service.ts
-
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 
-
-// 💡 Definimos el contrato exacto que exige el backend ajustado
 export interface CreateCustomerInput {
   nitRut: string;
   razonSocial: string;
@@ -21,21 +18,26 @@ export class CustomerService {
   /**
    * Obtiene la lista de clientes B2B pertenecientes al Tenant logueado
    */
-  getCustomers(): Observable<any[]> {
-    return this.http.get<{ message: string; count: number; customers: any[] }>(this.apiUrl).pipe(
+  getCustomers(options: { headers: HttpHeaders; }): Observable<any[]> {
+    // 💡 IMPORTANTE: Pasamos las 'options' como segundo parámetro para enviar el Token JWT blindado
+    return this.http.get<{ message: string; count: number; customers: any[] }>(this.apiUrl, options).pipe(
       map(response => response.customers)
     );
   }
- /**
+
+  /**
    * Registra una nueva empresa cliente en el CRM con el contrato alineado
    */
-  createCustomer(customer: CreateCustomerInput): Observable<any> {
+  createCustomer(customer: CreateCustomerInput, options: { headers: HttpHeaders; }): Observable<any> {
     const payloadParaBackend = {
-      empresa: customer.nitRut,       // Cumple con la validación del backend
-      nombre: customer.razonSocial,   // Satisface "El nombre de la empresa cliente es obligatorio"
+      empresa: customer.nitRut,       
+      nombre: customer.razonSocial,   
       correo: '',
       telefono: ''
     };
-    return this.http.post<any>(this.apiUrl, payloadParaBackend);
+
+    console.log('🚀 [FRONTEND SERVICE] Payload enviado:', payloadParaBackend);
+    
+    return this.http.post<any>(this.apiUrl, payloadParaBackend, options);
   }
 }

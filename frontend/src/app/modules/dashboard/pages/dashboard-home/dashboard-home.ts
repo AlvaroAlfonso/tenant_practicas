@@ -3,14 +3,12 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ChartModule } from 'primeng/chart';
-
-// 💡 Importaciones modernas de la suite de PrimeNG v19 para el formulario modal
 import { Dialog } from 'primeng/dialog';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
+import { HttpHeaders } from '@angular/common/http';
 
 import { CustomerService } from '../../services/customer.service.js';
-
 
 export interface Customer {
   id: string;
@@ -38,12 +36,9 @@ export class DashboardHomeComponent implements OnInit {
   private customerService = inject(CustomerService);
   private fb = inject(FormBuilder);
 
-  // Propiedades reactivas del estado
   public customers: Customer[] = [];
   public isLoading: boolean = true;
   public errorMessage: string = '';
-
-  // 💡 Control del Modal de Registro
   public displayModal: boolean = false;
   public customerForm!: FormGroup;
   public isSaving: boolean = false;
@@ -60,22 +55,39 @@ export class DashboardHomeComponent implements OnInit {
     });
   }
 
-  cargarClientes(): void {
+  // Generamos opciones de cabecera seguras con el token JWT guardado en el Login
+  private obtenerHeaders(): { headers: HttpHeaders } {
+    const token = localStorage.getItem('token');
+    return {
+      headers: new HttpHeaders({
+        'Authorization': `Bearer ${token}`
+      })
+    };
+  }
+
+cargarClientes(): void {
     this.isLoading = true;
-    this.customerService.getCustomers().subscribe({
-      next: (data) => {
-        this.customers = data;
+    const options = this.obtenerHeaders();
+
+    // 💡 Enviamos las opciones con el token al servicio externo
+    this.customerService.getCustomers(options).subscribe({
+      next: (clientesMapeados: any[]) => {
+        // 🕵️‍♂️ LOG DE AUDITORÍA
+        console.log('📥 [ANGULAR DASHBOARD] Clientes recibidos del servicio:', clientesMapeados);
+        
+        // Como el servicio ya usó .pipe(map()), 'clientesMapeados' es el arreglo directo de objetos
+        this.customers = clientesMapeados || [];
+        
         this.isLoading = false;
       },
       error: (err) => {
-        console.error('Error al recuperar los clientes del CRM:', err);
-        this.errorMessage = 'No se pudieron cargar los clientes de la organización.';
+        console.error('❌ Error al recuperar los clientes del CRM:', err);
+        this.errorMessage = 'No se pudieron cargar las empresas clientes de la organización (Verifica tu sesión).';
         this.isLoading = false;
       }
     });
   }
 
-  // Métodos de control del Modal
   abrirModal(): void {
     this.customerForm.reset();
     this.displayModal = true;
@@ -93,23 +105,24 @@ export class DashboardHomeComponent implements OnInit {
 
     this.isSaving = true;
     const formValues = this.customerForm.value;
+    const options = this.obtenerHeaders();
 
-    // Respetamos estrictamente el tipo CreateCustomerInput exigido por tu servicio
     const payload = {
       nitRut: formValues.nitRut,
       razonSocial: formValues.razonSocial
     };
 
-    this.customerService.createCustomer(payload).subscribe({
+    // 💡 Inyectamos el payload junto a las opciones de autenticación
+    this.customerService.createCustomer(payload, options).subscribe({
       next: (res) => {
-        console.log('✅ [CRM]: Cliente registrado con éxito:', res);
+        console.log('✅ [CRM]: Empresa cliente registrada con éxito:', res);
         this.cargarClientes();
         this.cerrarModal();
         this.isSaving = false;
       },
       error: (err) => {
         console.error('❌ [CRM]: Error al registrar el cliente:', err);
-        alert(err.error?.message || 'Error interno al registrar el cliente corporativo.');
+        alert(err.error?.message || 'Error interno al registrar la empresa cliente.');
         this.isSaving = false;
       }
     });
