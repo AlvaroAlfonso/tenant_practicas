@@ -4,7 +4,7 @@
 /* 1. Iconos globales del sistema */
 @import "primeicons/primeicons.css";
 
-/* 2. Inyección unificada global de Tailwind CSS v4 */
+/* 2. Inyección global de Tailwind CSS v4 */
 @import "tailwindcss";
 
 /* 3. Estilos base del cuerpo de la aplicación corporativa */
@@ -16,16 +16,3 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Forzar que los componentes input de PrimeNG v19 ocupen todo el ancho con Tailwind */
-.p-inputtext, .p-password, .p-password input {
-  width: 100% !important;
-}
-
-/* Animación de entrada para mensajes de error */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-2px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in {
-  animation: fadeIn 0.2s ease-out forwards;
-}

@@ -1,7 +1,8 @@
+//frontend/src/app/modules/dashboard/pages/dashboard-home/dashboard-home.ts
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { ChartModule } from 'primeng/chart'; 
+import { ChartModule } from 'primeng/chart';
 
 // 💡 Importaciones modernas de la suite de PrimeNG v19 para el formulario modal
 import { Dialog } from 'primeng/dialog';
@@ -9,7 +10,15 @@ import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
 
 import { CustomerService } from '../../services/customer.service.js';
-import { Customer } from '../../models/customer.model.js';
+
+
+export interface Customer {
+  id: string;
+  nitRut: string;
+  razonSocial: string;
+  tenantId?: string;
+  createdAt?: string;
+}
 
 @Component({
   selector: 'app-dashboard-home',
@@ -83,12 +92,18 @@ export class DashboardHomeComponent implements OnInit {
     }
 
     this.isSaving = true;
-    const nuevoCliente = this.customerForm.value; // Contiene { nitRut, razonSocial }
+    const formValues = this.customerForm.value;
 
-    this.customerService.createCustomer(nuevoCliente).subscribe({
+    // Respetamos estrictamente el tipo CreateCustomerInput exigido por tu servicio
+    const payload = {
+      nitRut: formValues.nitRut,
+      razonSocial: formValues.razonSocial
+    };
+
+    this.customerService.createCustomer(payload).subscribe({
       next: (res) => {
         console.log('✅ [CRM]: Cliente registrado con éxito:', res);
-        this.cargarClientes(); // Recargamos la lista en tiempo real
+        this.cargarClientes();
         this.cerrarModal();
         this.isSaving = false;
       },

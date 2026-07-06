@@ -1,0 +1,162 @@
+/* =======================================================================
+   ESTILOS CORPORATIVOS NATIVOS PARA EL DASHBOARD-HOME
+   ======================================================================= */
+
+/* Contenedor Principal con Margen y Centrado */
+.dashboard-container {
+  padding: 1.5rem;
+  max-width: 80rem;
+  margin: 0 auto;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Encabezado */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+}
+
+.header-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.header-subtitle {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+/* Botón Premium Registrar Cliente */
+.btn-registrar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background-color: #059669; /* Emerald 600 */
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-registrar:hover {
+  background-color: #047857; /* Emerald 700 */
+}
+
+/* Tarjeta / Contenedor de la Tabla */
+.panel-card {
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Tabla de Clientes */
+.crm-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.crm-table th {
+  background-color: #f8fafc;
+  padding: 1rem;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.crm-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.875rem;
+  color: #334155;
+}
+
+.table-row-hover:hover {
+  background-color: rgba(248, 250, 252, 0.7);
+}
+
+/* Contenedor de Error */
+.error-container {
+  padding: 1rem;
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #b91c1c;
+  border-radius: 0.75rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Estado Vacío */
+.empty-state-container {
+  padding: 4rem 1rem;
+  text-align: center;
+}
+
+.empty-icon-box {
+  display: inline-flex;
+  padding: 1rem;
+  background-color: #ecfdf5;
+  border: 1px solid #d1fae5;
+  border-radius: 9999px;
+  color: #059669;
+  margin-bottom: 1rem;
+}
+
+/* =======================================================================
+   ESTILOS DE ACOPLAMIENTO PARA EL MODAL PRIMENG v19
+   ======================================================================= */
+
+:host ::ng-deep .custom-premium-modal .p-dialog {
+  background: #ffffff !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 1.5rem !important;
+}
+
+:host ::ng-deep .custom-premium-modal .p-dialog-header {
+  padding-bottom: 1rem !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+}
+
+/* Campos de entrada internos del Modal */
+:host ::ng-deep .custom-form-input {
+  width: 100% !important;
+  padding: 0.625rem 0.875rem !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  font-size: 0.875rem !important;
+  background-color: #ffffff !important;
+  color: #334155 !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+:host ::ng-deep .custom-form-input:focus {
+  outline: none !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
